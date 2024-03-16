@@ -3,126 +3,116 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-// int res[2][2];
-// int arr1[][2] = {{1, 2}, {1, 2}};
-// int arr2[][2] = {{1, 2}, {1, 2}};
 
-int res[10][10];
-int arr1[][5] = {{1, 2, 3, 4, 5},
-                 {6, 7, 8, 9, 10},
-                 {11, 12, 13, 14, 15},
-                 {16, 17, 18, 19, 20},
-                 {21, 22, 23, 24, 25},
-                 {26, 27, 28, 29, 30},
-                 {31, 32, 33, 34, 35},
-                 {36, 37, 38, 39, 40},
-                 {41, 42, 43, 44, 45},
-                 {46, 47, 48, 49, 50}};
-int arr2[][10] = {
-    {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-    {11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
-    {21, 22, 23, 24, 25, 26, 27, 28, 29, 30},
-    {31, 32, 33, 34, 35, 36, 37, 38, 39, 40},
-    {41, 42, 43, 44, 45, 46, 47, 48, 49, 50}};
+// Define a struct to hold the data
+typedef struct {
+    int rows;
+    int cols;
+    int **data;
+} Matrix;
 
+// Define a struct that is passed to the thread function
 typedef struct attributes
 {
     int r1;
     int c1;
-    int r2;
     int c2;
+    Matrix *m1;
+    Matrix *m2;
+    Matrix *res;
 
 } Attributes;
 
-void thread_per_matrix_method(int r1, int c1, int r2, int c2);
-void thread_per_row_method(int r1, int c1, int r2, int c2);
-void thread_per_element_method(int r1, int c1, int r2, int c2);
+void printMatrix(const Matrix *matrix);
+Matrix* readMatrixFromFile(const char *filename);
+void freeMatrix(Matrix *matrix);
+int** allocateMatrix(int rows, int cols);
+void thread_per_matrix_method(Matrix *m1, Matrix *m2, Matrix *res);
+void thread_per_row_method(Matrix *m1, Matrix *m2, Matrix *res);
+void thread_per_element_method(Matrix *m1, Matrix *m2, Matrix *res);
 void *calculate_row(void *ptr);
 void *calculate_element(void *ptr);
 
 int main()
 {
+
+    const char *filename1= "matrix1.txt";
+    const char *filename2 = "matrix2.txt";
+    Matrix *matrix1 = readMatrixFromFile(filename1);
+    Matrix *matrix2 = readMatrixFromFile(filename2);
+    Matrix *res = (Matrix *)calloc(1,sizeof(Matrix));
+    res->rows = matrix1->rows;
+    res->cols =matrix2->cols; 
+    res->data = allocateMatrix(res->rows, res->cols);
+
     struct timeval stop, start;
 
     gettimeofday(&start, NULL); // start checking time
-    thread_per_matrix_method(10, 5, 5, 10);
+    thread_per_matrix_method(matrix1, matrix2, res);
     gettimeofday(&stop, NULL); // end checking time
 
+    printf("number of threads 1\n");
     printf("Seconds taken %lu\n", stop.tv_sec - start.tv_sec);
-    printf("Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
+    printf("Microseconds taken: %lu\n\n", stop.tv_usec - start.tv_usec);
 
-    for (int i = 0; i < 10; i++)
-    {
-        for (int j = 0; j < 10; j++)
-        {
-            printf("%d\t", res[i][j]);
-            res[i][j] = 0;
-        }
-        printf("\n");
-    }
+    printMatrix(res);
 
     gettimeofday(&start, NULL); // start checking time
-    thread_per_row_method(10, 5, 5, 10);
+    thread_per_row_method(matrix1, matrix2, res);
     gettimeofday(&stop, NULL); // end checking time
 
+    printf("\nnumber of threads %d \n", res-> rows);
     printf("Seconds taken %lu\n", stop.tv_sec - start.tv_sec);
-    printf("Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
+    printf("Microseconds taken: %lu\n\n", stop.tv_usec - start.tv_usec);
 
-    for (int i = 0; i < 10; i++)
-    {
-        for (int j = 0; j < 10; j++)
-        {
-            printf("%d\t", res[i][j]);
-            res[i][j] = 0;
-        }
-        printf("\n");
-    }
+    printMatrix(res);
 
     gettimeofday(&start, NULL); // start checking time
-    thread_per_element_method(10, 5, 5, 10);
+    thread_per_element_method(matrix1, matrix2, res);
     gettimeofday(&stop, NULL); // end checking time
 
+    printf("\nnumber of threads %d \n", res-> rows* res->cols);
     printf("Seconds taken %lu\n", stop.tv_sec - start.tv_sec);
-    printf("Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
+    printf("Microseconds taken: %lu\n\n", stop.tv_usec - start.tv_usec);
 
-    for (int i = 0; i < 10; i++)
-    {
-        for (int j = 0; j < 10; j++)
-        {
-            printf("%d\t", res[i][j]);
-            res[i][j] = 0;
-        }
-        printf("\n");
-    }
+    printMatrix(res);
+    freeMatrix(res);
 }
 
-void thread_per_matrix_method(int r1, int c1, int r2, int c2)
+
+// First method
+void thread_per_matrix_method(Matrix *m1, Matrix *m2, Matrix *res)
 {
-    for (int i = 0; i < r1; i++)
+    for (int i = 0; i < m1->rows; i++)
     {
-        for (int j = 0; j < c2; j++)
+        for (int j = 0; j < m2->cols; j++)
         {
-            for (int k = 0; k < c1; k++)
+            for (int k = 0; k < m1->cols; k++)
             {
-                res[i][j] += arr1[i][k] * arr2[k][j];
+                res->data[i][j] += m1->data[i][k] * m2->data[k][j];
             }
         }
     }
 }
 
-void thread_per_row_method(int r1, int c1, int r2, int c2)
+
+// Second method
+void thread_per_row_method(Matrix *m1, Matrix *m2, Matrix *res)
 {
-    pthread_t thread[r1];
-    for (int i = 0; i < r1; i++)
+    pthread_t thread[m1->rows];
+    for (int i = 0; i < m1->rows; i++)
     {
         Attributes *a = malloc(sizeof(Attributes));
         a->r1 = i;
-        a->c2 = c2;
-        a->c1 = c1;
+        a->c2 = m2->cols;
+        a->c1 = m1->cols;
+        a->m1 = m1;
+        a->m2 = m2;
+        a->res = res;
         pthread_create(&thread[i], NULL, calculate_row, (void *)a);
     }
 
-    for (int i = 0; i < r1; i++)
+    for (int i = 0; i < m1->rows; i++)
     {
         pthread_join(thread[i], NULL);
     }
@@ -135,30 +125,35 @@ void *calculate_row(void *ptr)
     {
         for (int k = 0; k < a->c1; k++)
         {
-            res[a->r1][j] += arr1[a->r1][k] * arr2[k][j];
+            a->res->data[a->r1][j] += a->m1->data[a->r1][k] * a->m2->data[k][j];
         }
     }
     return NULL;
 }
 
-void thread_per_element_method(int r1, int c1, int r2, int c2)
+
+// Third method
+void thread_per_element_method(Matrix *m1, Matrix *m2, Matrix *res)
 {
-    pthread_t thread[r1][c2];
-    for (int i = 0; i < r1; i++)
+    pthread_t thread[m1->rows][m2->cols];
+    for (int i = 0; i < m1->rows; i++)
     {
-        for (int j = 0; j < c2; j++)
+        for (int j = 0; j < m2->cols; j++)
         {
             Attributes *a = malloc(sizeof(Attributes));
             a->r1 = i;
             a->c2 = j;
-            a->c1 = c1;
+            a->c1 = m1->cols;
+            a->m1 = m1;
+            a->m2 = m2;
+            a->res = res;
             pthread_create(&thread[i][j], NULL, calculate_element, (void *)a);
         }
     }
 
-    for (int i = 0; i < r1; i++)
+    for (int i = 0; i < m1->rows; i++)
     {
-        for (int j = 0; j < c2; j++)
+        for (int j = 0; j < m2->cols; j++)
         {
             pthread_join(thread[i][j], NULL);
         }
@@ -170,7 +165,72 @@ void *calculate_element(void *ptr)
     Attributes *a = (Attributes *)ptr;
     for (int k = 0; k < a->c1; k++)
     {
-        res[a->r1][a->c2] += arr1[a->r1][k] * arr2[k][a->c2];
+        a->res->data[a->r1][a->c2] += a->m1->data[a->r1][k] * a->m2->data[k][a->c2];
     }
     return NULL;
+}
+
+
+
+// Reading from file code
+// Function to allocate memory for the matrix
+int** allocateMatrix(int rows, int cols) {
+    int **matrix = (int **)calloc(rows , sizeof(int *));
+    for (int i = 0; i < rows; i++) {
+        matrix[i] = (int *)calloc(cols , sizeof(int));
+    }
+    return matrix;
+}
+
+// Function to free memory allocated for the matrix
+void freeMatrix(Matrix *matrix) {
+    for (int i = 0; i < matrix->rows; i++) {
+        free(matrix->data[i]);
+    }
+    free(matrix->data);
+    free(matrix);
+}
+
+// Function to read matrix from file
+Matrix* readMatrixFromFile(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error opening file %s\n", filename);
+        return NULL;
+    }
+
+    Matrix *matrix = (Matrix *)malloc(sizeof(Matrix));
+    if (!matrix) {
+        printf("Memory allocation failed\n");
+        fclose(file);
+        return NULL;
+    }
+
+    // Read rows and cols from file
+    fscanf(file, "row=%d col=%d\n", &matrix->rows, &matrix->cols);
+
+    // Allocate memory for the matrix data
+    matrix->data = allocateMatrix(matrix->rows, matrix->cols);
+
+    // Read matrix elements from file
+    for (int i = 0; i < matrix->rows; i++) {
+        for (int j = 0; j < matrix->cols; j++) {
+            fscanf(file, "%d", &matrix->data[i][j]);
+        }
+    }
+
+    fclose(file);
+    return matrix;
+}
+
+// Function to print the matrix
+void printMatrix(const Matrix *matrix) {
+    printf("Matrix (%d x %d):\n", matrix->rows, matrix->cols);
+    for (int i = 0; i < matrix->rows; i++) {
+        for (int j = 0; j < matrix->cols; j++) {
+            printf("%d ", matrix->data[i][j]);
+            matrix->data[i][j] = 0; // Empty the matrix after printing.
+        }
+        printf("\n");
+    }
 }
