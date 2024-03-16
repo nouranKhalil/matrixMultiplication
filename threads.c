@@ -35,7 +35,7 @@ void *calculate_element(void *ptr);
 
 int main()
 {
-
+    // Read matrices and init result matrix
     const char *filename1= "matrix1.txt";
     const char *filename2 = "matrix2.txt";
     Matrix *matrix1 = readMatrixFromFile(filename1);
@@ -47,6 +47,7 @@ int main()
 
     struct timeval stop, start;
 
+    // First method single thread
     gettimeofday(&start, NULL); // start checking time
     thread_per_matrix_method(matrix1, matrix2, res);
     gettimeofday(&stop, NULL); // end checking time
@@ -57,6 +58,7 @@ int main()
 
     printMatrix(res);
 
+    // Second method thread per row
     gettimeofday(&start, NULL); // start checking time
     thread_per_row_method(matrix1, matrix2, res);
     gettimeofday(&stop, NULL); // end checking time
@@ -67,6 +69,7 @@ int main()
 
     printMatrix(res);
 
+    // Third method thread per element
     gettimeofday(&start, NULL); // start checking time
     thread_per_element_method(matrix1, matrix2, res);
     gettimeofday(&stop, NULL); // end checking time
