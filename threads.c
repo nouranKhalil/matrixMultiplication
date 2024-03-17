@@ -23,6 +23,7 @@ typedef struct attributes
 
 } Attributes;
 
+
 void writeMatrixToFile(const char *filename, Matrix *res, unsigned long start, unsigned long stop, int numt);
 Matrix *readMatrixFromFile(const char *filename);
 void freeMatrix(Matrix *matrix);
@@ -92,6 +93,7 @@ void thread_per_matrix_method(Matrix *m1, Matrix *m2, Matrix *res)
 void thread_per_row_method(Matrix *m1, Matrix *m2, Matrix *res)
 {
     pthread_t thread[m1->rows];
+    Attributes **attributesArray = malloc(m1->rows * sizeof(Attributes*));
     for (int i = 0; i < m1->rows; i++)
     {
         Attributes *a = malloc(sizeof(Attributes));
@@ -101,12 +103,14 @@ void thread_per_row_method(Matrix *m1, Matrix *m2, Matrix *res)
         a->m1 = m1;
         a->m2 = m2;
         a->res = res;
+        attributesArray[i] = a;
         pthread_create(&thread[i], NULL, calculate_row, (void *)a);
     }
 
     for (int i = 0; i < m1->rows; i++)
     {
         pthread_join(thread[i], NULL);
+        free(attributesArray[i]);
     }
 }
 
@@ -127,8 +131,10 @@ void *calculate_row(void *ptr)
 void thread_per_element_method(Matrix *m1, Matrix *m2, Matrix *res)
 {
     pthread_t thread[m1->rows][m2->cols];
+    Attributes ***attributesArray = malloc(m1->rows * sizeof(Attributes**));
     for (int i = 0; i < m1->rows; i++)
     {
+        attributesArray[i] = malloc(m2->cols * sizeof(Attributes*));
         for (int j = 0; j < m2->cols; j++)
         {
             Attributes *a = malloc(sizeof(Attributes));
@@ -138,6 +144,7 @@ void thread_per_element_method(Matrix *m1, Matrix *m2, Matrix *res)
             a->m1 = m1;
             a->m2 = m2;
             a->res = res;
+            attributesArray[i][j] = a;
             pthread_create(&thread[i][j], NULL, calculate_element, (void *)a);
         }
     }
@@ -147,6 +154,7 @@ void thread_per_element_method(Matrix *m1, Matrix *m2, Matrix *res)
         for (int j = 0; j < m2->cols; j++)
         {
             pthread_join(thread[i][j], NULL);
+            free(attributesArray[i][j]);
         }
     }
 }

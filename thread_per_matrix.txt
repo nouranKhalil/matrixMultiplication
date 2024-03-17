@@ -1,6 +1,6 @@
 
 number of threads 1 
-Microseconds taken: 1
+Microseconds taken: 0
 
 Matrix (3 x 4):
 -1 10 -15 -28 

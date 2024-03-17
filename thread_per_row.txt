@@ -1,6 +1,6 @@
 
 number of threads 3 
-Microseconds taken: 954
+Microseconds taken: 631
 
 Matrix (3 x 4):
 -1 10 -15 -28 
