@@ -3,9 +3,9 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-
 // Define a struct to hold the data
-typedef struct {
+typedef struct
+{
     int rows;
     int cols;
     int **data;
@@ -23,10 +23,10 @@ typedef struct attributes
 
 } Attributes;
 
-void printMatrix(const Matrix *matrix);
-Matrix* readMatrixFromFile(const char *filename);
+void writeMatrixToFile(const char *filename, Matrix *res, unsigned long start, unsigned long stop, int numt);
+Matrix *readMatrixFromFile(const char *filename);
 void freeMatrix(Matrix *matrix);
-int** allocateMatrix(int rows, int cols);
+int **allocateMatrix(int rows, int cols);
 void thread_per_matrix_method(Matrix *m1, Matrix *m2, Matrix *res);
 void thread_per_row_method(Matrix *m1, Matrix *m2, Matrix *res);
 void thread_per_element_method(Matrix *m1, Matrix *m2, Matrix *res);
@@ -36,13 +36,13 @@ void *calculate_element(void *ptr);
 int main()
 {
     // Read matrices and init result matrix
-    const char *filename1= "matrix1.txt";
+    const char *filename1 = "matrix1.txt";
     const char *filename2 = "matrix2.txt";
     Matrix *matrix1 = readMatrixFromFile(filename1);
     Matrix *matrix2 = readMatrixFromFile(filename2);
-    Matrix *res = (Matrix *)calloc(1,sizeof(Matrix));
+    Matrix *res = (Matrix *)calloc(1, sizeof(Matrix));
     res->rows = matrix1->rows;
-    res->cols =matrix2->cols; 
+    res->cols = matrix2->cols;
     res->data = allocateMatrix(res->rows, res->cols);
 
     struct timeval stop, start;
@@ -52,36 +52,26 @@ int main()
     thread_per_matrix_method(matrix1, matrix2, res);
     gettimeofday(&stop, NULL); // end checking time
 
-    printf("number of threads 1\n");
-    printf("Seconds taken %lu\n", stop.tv_sec - start.tv_sec);
-    printf("Microseconds taken: %lu\n\n", stop.tv_usec - start.tv_usec);
-
-    printMatrix(res);
+    writeMatrixToFile("thread_per_matrix.txt", res, start.tv_usec, stop.tv_usec, 1);
 
     // Second method thread per row
     gettimeofday(&start, NULL); // start checking time
     thread_per_row_method(matrix1, matrix2, res);
     gettimeofday(&stop, NULL); // end checking time
 
-    printf("\nnumber of threads %d \n", res-> rows);
-    printf("Seconds taken %lu\n", stop.tv_sec - start.tv_sec);
-    printf("Microseconds taken: %lu\n\n", stop.tv_usec - start.tv_usec);
-
-    printMatrix(res);
+    writeMatrixToFile("thread_per_row.txt", res, start.tv_usec, stop.tv_usec, res->rows);
 
     // Third method thread per element
     gettimeofday(&start, NULL); // start checking time
     thread_per_element_method(matrix1, matrix2, res);
     gettimeofday(&stop, NULL); // end checking time
 
-    printf("\nnumber of threads %d \n", res-> rows* res->cols);
-    printf("Seconds taken %lu\n", stop.tv_sec - start.tv_sec);
-    printf("Microseconds taken: %lu\n\n", stop.tv_usec - start.tv_usec);
+    writeMatrixToFile("thread_per_element.txt", res, start.tv_usec, stop.tv_usec, res->rows * res->cols);
 
-    printMatrix(res);
+    freeMatrix(matrix1);
+    freeMatrix(matrix2);
     freeMatrix(res);
 }
-
 
 // First method
 void thread_per_matrix_method(Matrix *m1, Matrix *m2, Matrix *res)
@@ -97,7 +87,6 @@ void thread_per_matrix_method(Matrix *m1, Matrix *m2, Matrix *res)
         }
     }
 }
-
 
 // Second method
 void thread_per_row_method(Matrix *m1, Matrix *m2, Matrix *res)
@@ -133,7 +122,6 @@ void *calculate_row(void *ptr)
     }
     return NULL;
 }
-
 
 // Third method
 void thread_per_element_method(Matrix *m1, Matrix *m2, Matrix *res)
@@ -173,21 +161,23 @@ void *calculate_element(void *ptr)
     return NULL;
 }
 
-
-
 // Reading from file code
 // Function to allocate memory for the matrix
-int** allocateMatrix(int rows, int cols) {
-    int **matrix = (int **)calloc(rows , sizeof(int *));
-    for (int i = 0; i < rows; i++) {
-        matrix[i] = (int *)calloc(cols , sizeof(int));
+int **allocateMatrix(int rows, int cols)
+{
+    int **matrix = (int **)calloc(rows, sizeof(int *));
+    for (int i = 0; i < rows; i++)
+    {
+        matrix[i] = (int *)calloc(cols, sizeof(int));
     }
     return matrix;
 }
 
 // Function to free memory allocated for the matrix
-void freeMatrix(Matrix *matrix) {
-    for (int i = 0; i < matrix->rows; i++) {
+void freeMatrix(Matrix *matrix)
+{
+    for (int i = 0; i < matrix->rows; i++)
+    {
         free(matrix->data[i]);
     }
     free(matrix->data);
@@ -195,15 +185,18 @@ void freeMatrix(Matrix *matrix) {
 }
 
 // Function to read matrix from file
-Matrix* readMatrixFromFile(const char *filename) {
+Matrix *readMatrixFromFile(const char *filename)
+{
     FILE *file = fopen(filename, "r");
-    if (!file) {
+    if (!file)
+    {
         printf("Error opening file %s\n", filename);
         return NULL;
     }
 
     Matrix *matrix = (Matrix *)malloc(sizeof(Matrix));
-    if (!matrix) {
+    if (!matrix)
+    {
         printf("Memory allocation failed\n");
         fclose(file);
         return NULL;
@@ -216,8 +209,10 @@ Matrix* readMatrixFromFile(const char *filename) {
     matrix->data = allocateMatrix(matrix->rows, matrix->cols);
 
     // Read matrix elements from file
-    for (int i = 0; i < matrix->rows; i++) {
-        for (int j = 0; j < matrix->cols; j++) {
+    for (int i = 0; i < matrix->rows; i++)
+    {
+        for (int j = 0; j < matrix->cols; j++)
+        {
             fscanf(file, "%d", &matrix->data[i][j]);
         }
     }
@@ -226,14 +221,34 @@ Matrix* readMatrixFromFile(const char *filename) {
     return matrix;
 }
 
-// Function to print the matrix
-void printMatrix(const Matrix *matrix) {
-    printf("Matrix (%d x %d):\n", matrix->rows, matrix->cols);
-    for (int i = 0; i < matrix->rows; i++) {
-        for (int j = 0; j < matrix->cols; j++) {
-            printf("%d ", matrix->data[i][j]);
-            matrix->data[i][j] = 0; // Empty the matrix after printing.
+// Function to write matrix to file
+void writeMatrixToFile(const char *filename, Matrix *res, unsigned long start, unsigned long stop, int numt)
+{
+    FILE *file;
+    file = fopen(filename, "w");
+
+    if (file == NULL)
+    {
+        fprintf(stderr, "Unable to open file\n");
+    }
+    else
+    {
+        // Write time and thread number of threads
+        fprintf(file, "\nnumber of threads %d \n", numt);
+        fprintf(file, "Microseconds taken: %lu\n\n", stop - start);
+
+        // Write matrix to file
+        fprintf(file, "Matrix (%d x %d):\n", res->rows, res->cols);
+        for (int i = 0; i < res->rows; i++)
+        {
+            for (int j = 0; j < res->cols; j++)
+            {
+                fprintf(file, "%d ", res->data[i][j]);
+                res->data[i][j] = 0; // Empty the matrix after printing.
+            }
+            fprintf(file, "\n");
         }
-        printf("\n");
+        // Close the file
+        fclose(file);
     }
 }
